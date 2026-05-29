@@ -1,1 +1,444 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indian Political Simulator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #fcefe3;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+        #game-board {
+            background: white;
+            width: 100%;
+            max-width: 800px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            padding: 30px;
+            box-sizing: border-box;
+            display: none; /* Hidden until party is chosen */
+        }
+        #start-screen {
+            background: white;
+            width: 100%;
+            max-width: 600px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            padding: 40px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        header {
+            text-align: center;
+            border-bottom: 3px solid #ff9933;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        h1 {
+            color: #138808;
+            margin: 0 0 10px 0;
+        }
+        #office-title, #party-title {
+            font-size: 1.1em;
+            color: #666;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: #fff8f0;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #ffe6cc;
+        }
+        .stat-title {
+            font-size: 0.9em;
+            text-transform: uppercase;
+            color: #555;
+            letter-spacing: 1px;
+        }
+        .stat-value {
+            font-size: 1.8em;
+            color: #ff9933;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .progress-bar {
+            background-color: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+            height: 10px;
+            margin-top: 10px;
+        }
+        .progress-fill {
+            background-color: #138808;
+            height: 100%;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+        .integrity-fill {
+            background-color: #000080; /* Ashoka Chakra Blue */
+        }
+        .actions-header {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            font-weight: bold;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+            color: #333;
+        }
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+        button {
+            background-color: #ff9933;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        button:hover:not(:disabled) {
+            background-color: #e68a00;
+            transform: translateY(-2px);
+        }
+        .btn-alt {
+            background-color: #138808;
+        }
+        .btn-alt:hover:not(:disabled) {
+            background-color: #0f6e06;
+        }
+        .btn-danger {
+            background-color: #d9534f;
+        }
+        .btn-danger:hover:not(:disabled) {
+            background-color: #c9302c;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #log-container {
+            background: #2b2b2b;
+            color: #f8f9fa;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 15px;
+            border-radius: 8px;
+            height: 220px;
+            overflow-y: auto;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+        .log-entry {
+            margin-bottom: 8px;
+            border-bottom: 1px dashed #555;
+            padding-bottom: 4px;
+        }
+        .turn-info {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #d9534f;
+        }
+        .start-btn {
+            display: block;
+            width: 100%;
+            margin-bottom: 15px;
+            padding: 15px;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Start Screen -->
+<div id="start-screen">
+    <h1>Indian Political Arena</h1>
+    <p>Welcome to the complex world of Indian politics. How will you begin your journey?</p>
+    
+    <button class="start-btn" onclick="initializeGame('create')">Start a Brand New Party</button>
+    <button class="start-btn btn-alt" onclick="initializeGame('join')">Join a Minor State Party (e.g., AIMIM, IUML)</button>
+</div>
+
+<!-- Main Game Board -->
+<div id="game-board">
+    <header>
+        <h1>Indian Political Arena</h1>
+        <div id="party-title">Party: None</div>
+        <div id="office-title">Current Office: Campaigning for Corporator</div>
+    </header>
+
+    <div class="turn-info" id="turn-display">Weeks until Election: 10</div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-title">Vote Share (Popularity)</div>
+            <div class="stat-value" id="pop-val">30%</div>
+            <div class="progress-bar"><div class="progress-fill" id="pop-bar"></div></div>
+            <div style="font-size: 0.8em; margin-top: 5px; color: #666;" id="target-pop">Target: 40%</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Party Funds</div>
+            <div class="stat-value" id="funds-val">₹50,000</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-title">Public Image (Integrity)</div>
+            <div class="stat-value" id="int-val">75%</div>
+            <div class="progress-bar"><div class="progress-fill integrity-fill" id="int-bar"></div></div>
+        </div>
+    </div>
+
+    <div class="actions-header">Campaign Actions</div>
+    <div class="actions" id="action-buttons">
+        <button onclick="takeAction('rally')">Hold a Jan Sabha (-₹20k)<br><small>Boosts Vote Share</small></button>
+        <button onclick="takeAction('padayatra')">Padayatra (Foot March)<br><small>Modest Funds, Slight Vote Boost</small></button>
+        <button onclick="takeAction('bonds')">Electoral Bonds<br><small>Massive Funds, Lowers Public Image</small></button>
+        <button onclick="takeAction('itcell')">Activate IT Cell (-₹40k)<br><small>High Vote Boost, Tanks Image</small></button>
+        <button onclick="takeAction('community')">Free Rations Drive (-₹10k)<br><small>Boosts Public Image</small></button>
+        <button class="btn-danger" onclick="switchParty()">Switch/Create Party (-₹15k)<br><small>Changes Party, Drops Image, Random Boost</small></button>
+    </div>
+
+    <div class="actions-header">Political Log</div>
+    <div id="log-container"></div>
+</div>
+
+<script>
+    // Game Data Structure
+    const offices = [
+        { title: "Corporator (Municipal Council)", targetPop: 40, totalTurns: 10, startFunds: 50000, startPop: 25 },
+        { title: "MLA (State Assembly)", targetPop: 50, totalTurns: 12, startFunds: 200000, startPop: 30 },
+        { title: "Chief Minister", targetPop: 60, totalTurns: 15, startFunds: 1000000, startPop: 35 },
+        { title: "Prime Minister", targetPop: 70, totalTurns: 20, startFunds: 5000000, startPop: 40 }
+    ];
+
+    let currentLevel = 0;
+    let state = {
+        partyName: "",
+        turn: 0,
+        popularity: offices[0].startPop,
+        funds: offices[0].startFunds,
+        integrity: 75,
+        gameOver: false
+    };
+
+    // Initialization
+    function initializeGame(choice) {
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('game-board').style.display = 'block';
+
+        if (choice === 'create') {
+            let name = prompt("Enter the name of your new Political Party:", "Janata Vikas Party");
+            state.partyName = name ? name : "Independent Front";
+            logMessage(`You have founded the <b>${state.partyName}</b>. A new era begins!`);
+        } else {
+            let parties = ["AIMIM", "IUML", "Apna Dal", "SBSP", "MNS"];
+            state.partyName = parties[Math.floor(Math.random() * parties.length)];
+            logMessage(`You have joined the <b>${state.partyName}</b>. Time to rise through the ranks.`);
+        }
+        
+        logMessage(`Your first goal: Win the ${offices[currentLevel].title} election. You need ${offices[currentLevel].targetPop}% vote share.`);
+        updateUI();
+    }
+
+    // Party Switching Mechanic
+    function switchParty() {
+        if (state.gameOver) return;
+        if (state.funds < 15000) { logMessage("Error: Not enough funds to manage the transition."); return; }
+        
+        let newName = prompt("You are leaving your current party! Enter the name of the new party to join or create:", "National Democratic Alliance");
+        if (!newName) { logMessage("Transition cancelled."); return; }
+
+        state.partyName = newName;
+        state.funds -= 15000;
+        
+        // Defection penalty to integrity, but potential popularity bounce from fresh narrative
+        let intDrop = -rand(15, 25);
+        let popBounce = rand(5, 12);
+        
+        applyChanges(popBounce, 0, intDrop);
+        logMessage(`<b>DEFECTION!</b> You shocked the media by moving to <b>${state.partyName}</b>. Critics call you an opportunist (Image dropped), but your new allies give you a fresh wave of momentum!`);
+        
+        processTurnEnd();
+    }
+
+    // Core Logic
+    function takeAction(actionType) {
+        if (state.gameOver) return;
+
+        let popChange = 0;
+        let fundsChange = 0;
+        let intChange = 0;
+        let actionMsg = "";
+        let scale = currentLevel + 1;
+
+        switch (actionType) {
+            case 'rally':
+                if (state.funds < 20000) { logMessage("Error: Not enough funds for a Jan Sabha."); return; }
+                fundsChange = -20000;
+                popChange = rand(4, 9);
+                actionMsg = "You held a massive Jan Sabha. The crowd chanted your name!";
+                break;
+            case 'padayatra':
+                fundsChange = rand(5000, 15000) * scale;
+                popChange = rand(1, 3);
+                actionMsg = "You walked through the constituencies connecting with local leaders and collecting chanda (funds).";
+                break;
+            case 'bonds':
+                fundsChange = rand(40000, 100000) * scale;
+                intChange = -rand(8, 15);
+                actionMsg = "You received massive anonymous Electoral Bonds from industrialists. Your coffers are full, but transparency watchdogs are attacking you.";
+                break;
+            case 'itcell':
+                if (state.funds < 40000) { logMessage("Error: Not enough funds for the IT Cell."); return; }
+                fundsChange = -40000;
+                popChange = rand(8, 15);
+                intChange = -rand(12, 20);
+                actionMsg = "Your IT Cell unleashed targeted WhatsApp forwards against the opposition. It polarized voters in your favor, but your image took a massive hit.";
+                break;
+            case 'community':
+                if (state.funds < 10000) { logMessage("Error: Not enough funds."); return; }
+                fundsChange = -10000;
+                intChange = rand(6, 14);
+                popChange = rand(0, 2);
+                actionMsg = "You distributed free rations and organized a medical camp. The local media praised your grassroots work.";
+                break;
+        }
+
+        applyChanges(popChange, fundsChange, intChange);
+        logMessage(actionMsg);
+        
+        processTurnEnd();
+    }
+
+    function processTurnEnd() {
+        state.turn++;
+        let currentOffice = offices[currentLevel];
+        let turnsLeft = currentOffice.totalTurns - state.turn;
+
+        // Random Events
+        if (Math.random() < 0.25) {
+            triggerRandomEvent();
+        }
+
+        if (turnsLeft <= 0) {
+            checkElectionResult();
+        } else {
+            updateUI();
+        }
+    }
+
+    function triggerRandomEvent() {
+        const events = [
+            { cond: () => state.integrity < 40, effect: () => { applyChanges(-12, 0, 0); return "SCAM EXPOSED! A sting operation revealed your shady land deals. Vote share drops!"; } },
+            { cond: () => state.integrity > 75, effect: () => { applyChanges(8, 0, 0); return "ENDORSEMENT! A highly respected anti-corruption crusader backs your campaign."; } },
+            { cond: () => true, effect: () => { let f = -rand(10000, 30000); applyChanges(0, f, 0); return `ELECTION COMMISSION NOTICE! A code of conduct violation fines your party ₹${Math.abs(f).toLocaleString()}.`; } },
+            { cond: () => true, effect: () => { applyChanges(-5, 0, 0); return "SLIP OF TONGUE! You made a controversial remark regarding caste dynamics. The opposition is furious."; } },
+            { cond: () => true, effect: () => { applyChanges(5, 0, 0); return "VIRAL INTERVIEW! You destroyed a biased news anchor on live TV. The youth love it!"; } }
+        ];
+
+        let validEvents = events.filter(e => e.cond());
+        let selected = validEvents[Math.floor(Math.random() * validEvents.length)];
+        let msg = selected.effect();
+        logMessage(`<b>${msg}</b>`);
+    }
+
+    function checkElectionResult() {
+        let currentOffice = offices[currentLevel];
+        updateUI(); 
+
+        if (state.popularity >= currentOffice.targetPop) {
+            logMessage(`<b>ELECTION RESULT: VICTORY!</b> You won the mandate to become ${currentOffice.title}!`);
+            currentLevel++;
+            if (currentLevel >= offices.length) {
+                logMessage("<b>CONGRATULATIONS! YOU HAVE SECURED A MAJORITY IN THE LOK SABHA AND ARE THE PRIME MINISTER OF INDIA!</b>");
+                endGame();
+            } else {
+                state.turn = 0;
+                let nextOffice = offices[currentLevel];
+                state.popularity = nextOffice.startPop;
+                state.funds += nextOffice.startFunds; 
+                logMessage(`-----------------------------------------`);
+                logMessage(`Your next target: <b>${nextOffice.title}</b>. Target Vote Share: ${nextOffice.targetPop}%.`);
+            }
+        } else {
+            logMessage(`<b>ELECTION RESULT: DEFEAT.</b> You only secured ${Math.floor(state.popularity)}% of the vote. You are relegated to the opposition benches. Game Over.`);
+            endGame();
+        }
+    }
+
+    function endGame() {
+        state.gameOver = true;
+        document.getElementById('action-buttons').innerHTML = `<button style="grid-column: span 2;" onclick="location.reload()">Restart Political Career</button>`;
+    }
+
+    // Utilities
+    function applyChanges(pop, funds, int) {
+        state.popularity += pop;
+        state.funds += funds;
+        state.integrity += int;
+
+        if (state.popularity < 0) state.popularity = 0;
+        if (state.popularity > 100) state.popularity = 100;
+        if (state.integrity < 0) state.integrity = 0;
+        if (state.integrity > 100) state.integrity = 100;
+        if (state.funds < 0) state.funds = 0;
+    }
+
+    function rand(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function logMessage(msg) {
+        const logBox = document.getElementById('log-container');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `> ${msg}`;
+        logBox.appendChild(entry);
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function updateUI() {
+        let currentOffice = offices[currentLevel];
+        if(!currentOffice) return;
+
+        document.getElementById('party-title').innerText = `Party: ${state.partyName}`;
+        document.getElementById('office-title').innerText = `Current Office: Campaigning for ${currentOffice.title}`;
+        document.getElementById('turn-display').innerText = `Weeks until Election: ${currentOffice.totalTurns - state.turn}`;
+        
+        document.getElementById('pop-val').innerText = `${Math.floor(state.popularity)}%`;
+        document.getElementById('pop-bar').style.width = `${state.popularity}%`;
+        document.getElementById('target-pop').innerText = `Target to win: ${currentOffice.targetPop}%`;
+
+        document.getElementById('funds-val').innerText = `₹${state.funds.toLocaleString('en-IN')}`;
+
+        document.getElementById('int-val').innerText = `${Math.floor(state.integrity)}%`;
+        document.getElementById('int-bar').style.width = `${state.integrity}%`;
+
+        // Change colors based on danger zones
+        document.getElementById('pop-val').style.color = state.popularity >= currentOffice.targetPop ? '#138808' : '#ff9933';
+        document.getElementById('int-val').style.color = state.integrity < 40 ? '#d9534f' : '#000080';
+    }
+</script>
+
+</body>
+</html>
